@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-etl.py
-Script ETL que:
-1. Descarga un archivo de Google Drive (o Docs, Sheets, Slides).
-2. Extrae su contenido de texto (soporta: PDF con texto, DOCX, XLSX, PPTX, CSV, TXT).
-3. Convierte el contenido a un archivo .txt optimizado para LLMs.
-Ignora PDFs escaneados (imagen) e imágenes.
+Instructivo:
+se debe copiar el link con este comando -> python etl.py --url " url de drive"
+ejecutar codigo 
+revisar id del archivo txt
 """
 
 import os
