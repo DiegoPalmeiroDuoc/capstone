@@ -67,3 +67,7 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+
+#firebase admin sdk
+cliente_web/admin-doc-ia-firebase-adminsdk-fbsvc-82d2fcac61.json
