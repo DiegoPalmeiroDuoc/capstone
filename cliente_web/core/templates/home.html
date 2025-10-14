@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intexta - Tu asistente virtual</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #1e1e1e;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header .logo {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        header .subtitle {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        nav button {
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin-left: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        nav button:hover {
+            background-color: #e65c00;
+        }
+        .hero {
+            background: linear-gradient(to bottom, #333, #111);
+            color: white;
+            text-align: center;
+            padding: 100px 20px;
+        }
+        .hero h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .hero button {
+            background-color: #ff6600;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .hero button:hover {
+            background-color: #e65c00;
+        }
+        .info {
+            padding: 50px 20px;
+            text-align: center;
+        }
+        .info img {
+            max-width: 300px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <div class="logo">Intexta</div>
+            <div class="subtitle">Tu asistente virtual</div>
+        </div>
+        <nav>
+            <button onclick="location.href='#contacto'">Contacto</button>
+            <button onclick="location.href='/login'">Iniciar sesión</button>
+        </nav>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <h1>Un sistema que sabe todo sobre tu negocio y lo pone a tu alcance</h1>
+        <button onclick="document.getElementById('info').scrollIntoView({behavior: 'smooth'})">
+            Descubrir
+        </button>
+    </section>
+
+    <!-- INFO -->
+    <section class="info" id="info">
+        <h2>¿Qué es Intexta?</h2>
+        <p>
+            Intexta es una plataforma inteligente que conecta con tus canales de comunicación, 
+            como WhatsApp, y responde automáticamente a las consultas sobre tus productos y servicios, 
+            utilizando tus propios documentos y datos. 
+        </p>
+        <img src="https://via.placeholder.com/300x200" alt="Imagen del proyecto">
+    </section>
+
+    <!-- CONTACTO -->
+    <section class="info" id="contacto">
+        <h2>Contacto</h2>
+        <p>Si quieres más información, escríbenos a <strong>contacto@intexta.com</strong></p>
+    </section>
+
+</body>
+</html>

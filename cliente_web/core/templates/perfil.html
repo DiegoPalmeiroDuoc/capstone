@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - Intexta</title>
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<header>
+    <div class="logo-container">
+        <img src="{% static 'img/logo.png' %}" alt="Logo Intexta" class="logo-img">
+        <div>
+            <div class="logo-text">Intexta</div>
+            <div class="subtitle">Tu asistente virtual</div>
+        </div>
+    </div>
+    <nav>
+        <button onclick="window.location.href='/dashboard'"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+        <button onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+    </nav>
+</header>
+
+<section class="profile-section">
+    <h2><i class="fas fa-user-circle"></i> Mi perfil</h2>
+
+    <div class="profile-form">
+        <label>Nombre completo:</label>
+        <input id="nombre" type="text">
+
+        <label>Correo electrónico:</label>
+        <input id="email" type="email" disabled>
+
+        <label>Rol:</label>
+        <input id="rol" type="text" disabled>
+
+        <label>Fecha de registro:</label>
+        <input id="fechaRegistro" type="text" disabled>
+
+        <button onclick="guardarCambios()">Guardar cambios</button>
+    </div>
+</section>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+
+<script>
+    // Configuración Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBgqUuI5uJDvmXTyzt9NdtR6BquSqk2OqQ",
+        authDomain: "admin-doc-ia.firebaseapp.com",
+        projectId: "admin-doc-ia",
+        storageBucket: "admin-doc-ia.firebasestorage.app",
+        messagingSenderId: "711945554973",
+        appId: "1:711945554973:web:64892a3f8614cdbf088af4"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Verificar si está logueado
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = "/login";
+        } else {
+            cargarPerfil(user.uid);
+        }
+    });
+
+    function logoutUser() {
+        auth.signOut().then(() => {
+            window.location.href = "/";
+        });
+    }
+
+    function cargarPerfil(uid) {
+        db.collection("usuarios").doc(uid).get().then(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                document.getElementById('nombre').value = data.nombre || '';
+                document.getElementById('email').value = data.email || '';
+                document.getElementById('rol').value = data.rol || '';
+                document.getElementById('fechaRegistro').value = data.fechaRegistro || '';
+            } else {
+                alert("No se encontraron datos de perfil");
+            }
+        });
+    }
+
+    function guardarCambios() {
+        const uid = auth.currentUser.uid;
+        const nuevoNombre = document.getElementById('nombre').value;
+
+        db.collection("usuarios").doc(uid).update({
+            nombre: nuevoNombre
+        }).then(() => {
+            alert("Perfil actualizado correctamente");
+        }).catch(error => {
+            alert("Error al actualizar: " + error.message);
+        });
+    }
+</script>
+
+</body>
+</html>

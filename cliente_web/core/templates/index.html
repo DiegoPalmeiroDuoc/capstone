@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intexta - Tu asistente virtual</title>
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header data-aos="fade-down">
+        <div class="logo-container">
+            <img src="{% static 'img/logo.png' %}" alt="Logo Intexta" class="logo-img">
+            <div>
+                <div class="logo-text">Intexta</div>
+                <div class="subtitle">Tu asistente virtual</div>
+                <button id="loginBtn"></button>
+
+            </div>
+        </div>
+
+        <!-- Botón hamburguesa (solo visible en móvil) -->
+        <div class="hamburger" onclick="toggleMenu()">
+            <i class="fas fa-bars"></i>
+        </div>
+
+        <!-- Menú de navegación -->
+        <nav id="nav-menu">
+            <button onclick="scrollToSection('contacto')">
+                <i class="fas fa-envelope"></i> Contacto
+            </button>
+            <button onclick="location.href='/login'">
+                <i class="fas fa-user"></i> Iniciar sesión
+            </button>
+        </nav>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero" data-aos="fade-up">
+        <h1><i class="fas fa-lightbulb"></i> Un sistema que sabe todo sobre tu negocio y lo pone a tu alcance</h1>
+        <button onclick="scrollToSection('info')" data-aos="flip-up">
+            <i class="fas fa-arrow-down"></i> Descubrir
+        </button>
+    </section>
+
+    <!-- INFO -->
+    <section class="info" id="info" data-aos="fade-right">
+        <h2><i class="fas fa-info-circle"></i> ¿Qué es Intexta?</h2>
+        <p>
+            Intexta es una plataforma inteligente que conecta con tus canales de comunicación,
+            como WhatsApp, y responde automáticamente a las consultas sobre tus productos y servicios,
+            utilizando tus propios documentos y datos.
+        </p>
+        <img src="https://via.placeholder.com/300x200" alt="Imagen del proyecto" data-aos="zoom-in">
+    </section>
+
+    <!-- CONTACTO -->
+    <section class="info" id="contacto" data-aos="fade-left">
+        <h2><i class="fas fa-envelope-open-text"></i> Contacto</h2>
+        <p>Si quieres más información, escríbenos a <strong>contacto@intexta.com</strong></p>
+    </section>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+      AOS.init({
+        duration: 1000,
+        once: true
+      });
+
+      firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    auth.onAuthStateChanged(user => {
+        const loginBtn = document.getElementById('loginBtn');
+        if (user) {
+            loginBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Ir al Dashboard';
+            loginBtn.onclick = () => window.location.href = "/dashboard";
+        } else {
+            loginBtn.innerHTML = '<i class="fas fa-user"></i> Iniciar sesión';
+            loginBtn.onclick = () => window.location.href = "/login";
+        }
+    });
+
+      
+    </script>
+</body>
+</html>

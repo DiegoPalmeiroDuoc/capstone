@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Registro - Intexta</title>
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Mensajes -->
+    <div id="messageBox" class="message-box" style="display:none;">
+        <span id="messageText"></span>
+        <div id="messageAction" style="margin-top:8px;"></div>
+    </div>
+
+    <section class="login-section">
+        <h2 id="formTitle"><i class="fas fa-user"></i> Iniciar sesión</h2>
+        <div class="login-form">
+            <input id="email" type="email" placeholder="Correo electrónico">
+            <div class="password-container">
+                <input id="password" type="password" placeholder="Contraseña">
+                <i class="fas fa-eye" onclick="togglePassword('password')"></i>
+            </div>
+
+            <!-- Registro -->
+            <div id="extraFields" style="display:none;">
+                <input id="emailConfirm" type="email" placeholder="Confirmar correo electrónico">
+                <div class="password-container">
+                    <input id="passwordConfirm" type="password" placeholder="Confirmar contraseña">
+                    <i class="fas fa-eye" onclick="togglePassword('passwordConfirm')"></i>
+                </div>
+                <input id="nombre" type="text" placeholder="Nombre completo">
+            </div>
+
+            <!-- El botón ahora tiene onclick directo -->
+            <button id="actionBtn" onclick="login()">Ingresar</button>
+            <p id="toggleText">
+                ¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate aquí</a>
+            </p>
+        </div>
+    </section>
+
+    <!-- Firebase v9 Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgqUuI5uJDvmXTyzt9NdtR6BquSqk2OqQ",
+            authDomain: "admin-doc-ia.firebaseapp.com",
+            projectId: "admin-doc-ia",
+            storageBucket: "admin-doc-ia.appspot.com",
+            messagingSenderId: "711945554973",
+            appId: "1:711945554973:web:64892a3f8614cdbf088af4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        function showMessage(type, text, actionHtml = "") {
+            const box = document.getElementById('messageBox');
+            document.getElementById('messageText').textContent = text;
+            document.getElementById('messageAction').innerHTML = actionHtml;
+            box.className = `message-box message-${type}`;
+            box.style.display = 'block';
+            setTimeout(() => box.classList.add('show'), 10);
+            if (!actionHtml) {
+                setTimeout(() => {
+                    box.classList.remove('show');
+                    setTimeout(() => { box.style.display = 'none'; }, 300);
+                }, 5000);
+            }
+        }
+
+        function togglePassword(idCampo) {
+            const campo = document.getElementById(idCampo);
+            campo.type = campo.type === "password" ? "text" : "password";
+        }
+
+        function login() {
+            const emailVal = document.getElementById('email').value;
+            const passVal = document.getElementById('password').value;
+
+            signInWithEmailAndPassword(auth, emailVal, passVal)
+                .then(userCredential => {
+                    const user = userCredential.user;
+
+                    // Recargar el estado del usuario para obtener emailVerified actualizado
+                    return user.reload().then(() => {
+                        if (!user.emailVerified) {
+                            showMessage("error", "Tu cuenta no está verificada. Por favor revisa tu correo.");
+                            signOut(auth);
+                            return;
+                        }
+                        showMessage("success", "Inicio de sesión exitoso");
+                        window.location.href = "/dashboard";
+                    });
+                })
+                .catch(error => {
+                    console.error("Error login:", error);
+                    showMessage("error", "Usuario o contraseña incorrectos");
+                });
+        }
+
+        function register() {
+            const emailVal = document.getElementById('email').value;
+            const emailConfirmVal = document.getElementById('emailConfirm').value;
+            const passVal = document.getElementById('password').value;
+            const passConfirmVal = document.getElementById('passwordConfirm').value;
+            const nombreVal = document.getElementById('nombre').value;
+
+            if (!emailVal || !emailConfirmVal || !passVal || !passConfirmVal || !nombreVal) {
+                showMessage("error", "Completa todos los campos");
+                return;
+            }
+            if (emailVal !== emailConfirmVal) {
+                showMessage("error", "Los correos electrónicos no coinciden");
+                return;
+            }
+            if (passVal !== passConfirmVal) {
+                showMessage("error", "Las contraseñas no coinciden");
+                return;
+            }
+
+            createUserWithEmailAndPassword(auth, emailVal, passVal)
+                .then(userCredential => {
+                    sendEmailVerification(userCredential.user)
+                        .then(() => {
+                            showMessage("info", `Se ha enviado un correo de verificación a ${emailVal}. Por favor verifica tu cuenta antes de iniciar sesión. Revisa tu bandeja de entrada y carpetas de spam`);
+                        });
+                    return setDoc(doc(db, "usuarios", userCredential.user.uid), {
+                        nombre: nombreVal,
+                        email: emailVal,
+                        rol: "cliente",
+                        fechaRegistro: new Date().toISOString(),
+                        emailVerificado: false
+                    });
+                })
+                .then(() => {
+                    setTimeout(() => showLogin(), 5000);
+                })
+                .catch(error => showMessage("error", error.message));
+        }
+
+        function showRegister() {
+            document.getElementById("formTitle").innerHTML = '<i class="fas fa-user-plus"></i> Registrarse';
+            document.getElementById("extraFields").style.display = "block";
+            document.getElementById("actionBtn").innerText = "Crear cuenta";
+            document.getElementById("actionBtn").onclick = register;
+            document.getElementById("toggleText").innerHTML = '¿Ya tienes cuenta? <a href="#" onclick="showLogin()">Inicia sesión aquí</a>';
+        }
+
+        function showLogin() {
+            document.getElementById("formTitle").innerHTML = '<i class="fas fa-user"></i> Iniciar sesión';
+            document.getElementById("extraFields").style.display = "none";
+            document.getElementById("actionBtn").innerText = "Ingresar";
+            document.getElementById("actionBtn").onclick = login;
+            document.getElementById("toggleText").innerHTML = '¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate aquí</a>';
+        }
+
+        // Exponer funciones para que puedan ser llamadas desde HTML
+        window.togglePassword = togglePassword;
+        window.showRegister = showRegister;
+        window.showLogin = showLogin;
+        window.login = login;
+        window.register = register;
+    </script>
+
+</body>
+</html>
