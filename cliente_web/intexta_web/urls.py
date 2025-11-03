@@ -17,12 +17,24 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from core import views
+
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
+    
+    # Páginas web
     path('', views.index, name='index'),
     path('login/', views.login_view, name='login'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('perfil/', views.perfil_view, name='perfil'),
-    path('api/docs/', views.api_list_docs),
-    path('home', views.home, name='home')
+    path('home/', views.home, name='home'),
+    path('debug-logs/', views.debug_logs_view, name='debug_logs'),
+    
+    # API Endpoints
+    path('api/docs/', views.api_list_docs, name='api_list_docs'),
+    path('api/docs/status/', views.api_document_status, name='api_document_status'),
+    path('api/docs/process/', views.api_process_document, name='api_process_document'),
+    path('api/docs/search/', views.api_search_documents, name='api_search_documents'),
+    path('api/processor/trigger/', views.api_trigger_processor, name='api_trigger_processor'),
+    path('api/user/update-phone/', views.api_update_phone, name='api_update_phone'),
 ]

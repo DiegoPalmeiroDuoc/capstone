@@ -2,10 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-Instructivo:
-se debe copiar el link con este comando -> python etl.py --url " url de drive"
-ejecutar codigo 
-revisar id del archivo txt
+ETL - Extractor de Texto de Documentos
+Soporta:
+- Google Drive URLs (Docs, Sheets, Slides, archivos)
+- Firebase Storage URLs
+- Archivos locales
+
+Uso:
+  python etl.py --url "URL_DE_GOOGLE_DRIVE"
+  python etl.py --firebase-url "gs://bucket/path/file.pdf"
+  python etl.py --local-file "ruta/archivo.pdf"
 """
 
 import os
@@ -20,6 +26,7 @@ import pdfplumber
 import docx
 import pandas as pd
 from pptx import Presentation
+from urllib.parse import urlparse
 
 # ---------- Configuración de logs ----------
 def setup_logging(verbose=True):
@@ -168,6 +175,42 @@ def choose_extractor(path):
         return extract_image(path)
     return extract_txt(path)
 
+# ---------- Firebase Support ----------
+def download_from_firebase(gs_url, dst_path):
+    """
+    Descarga un archivo desde Firebase Storage usando la URL gs://
+    Requiere que firebase_admin esté configurado.
+    """
+    try:
+        from firebase_admin import storage
+        # Extraer bucket y path de gs://bucket/path/file.pdf
+        parsed = urlparse(gs_url)
+        bucket_name = parsed.netloc
+        file_path = parsed.path.lstrip('/')
+        
+        bucket = storage.bucket(bucket_name)
+        blob = bucket.blob(file_path)
+        blob.download_to_filename(dst_path)
+        logging.info(f"Descargado desde Firebase: {file_path}")
+        return dst_path
+    except ImportError:
+        raise ImportError("firebase_admin no está instalado. Usa: pip install firebase-admin")
+    except Exception as e:
+        raise Exception(f"Error descargando desde Firebase: {e}")
+
+def download_from_http_url(url, dst_path):
+    """Descarga archivo desde URL HTTP/HTTPS directa (ej: Firebase Storage public URL)"""
+    try:
+        r = requests.get(url, stream=True, timeout=60)
+        r.raise_for_status()
+        with open(dst_path, "wb") as f:
+            for chunk in r.iter_content(1024 * 1024):
+                f.write(chunk)
+        logging.info(f"Descargado desde URL: {url}")
+        return dst_path
+    except Exception as e:
+        raise Exception(f"Error descargando desde URL: {e}")
+
 # ---------- Pipeline principal ----------
 def process_url(url, out_path=None, verbose=True):
     """
@@ -178,20 +221,42 @@ def process_url(url, out_path=None, verbose=True):
     4. Guarda salida en .txt.
     """
     setup_logging(verbose)
-    kind, fid = parse_drive_url(url)
-    logging.info(f"Detectado tipo={kind} id={fid}")
-
+    
     with tempfile.TemporaryDirectory() as td:
-        # Si es Docs/Sheets/Slides → exportar
-        if kind in ("document", "spreadsheets", "presentation"):
-            u, ext = docs_export_url(kind, fid)
-            local = os.path.join(td, f"{fid}{ext}")
-            download_file(u, local)
+        # Detectar si es Firebase Storage URL
+        if url.startswith("gs://"):
+            logging.info("Detectado: Firebase Storage URL")
+            filename = os.path.basename(urlparse(url).path)
+            local = os.path.join(td, filename)
+            download_from_firebase(url, local)
+        
+        # Detectar si es URL HTTP directa (Firebase Storage public URL)
+        elif url.startswith("http") and "firebasestorage" in url:
+            logging.info("Detectado: Firebase Storage HTTP URL")
+            filename = "downloaded_file"
+            # Intentar obtener extensión de la URL
+            parsed_url = urlparse(url)
+            path_parts = parsed_url.path.split('/')
+            if path_parts:
+                filename = path_parts[-1].split('?')[0]
+            local = os.path.join(td, filename)
+            download_from_http_url(url, local)
+        
+        # URLs de Google Drive
         else:
-            # Archivos subidos a Drive
-            u = f"https://drive.google.com/uc?export=download&id={fid}"
-            local = os.path.join(td, fid)
-            download_file(u, local)
+            kind, fid = parse_drive_url(url)
+            logging.info(f"Detectado tipo={kind} id={fid}")
+            
+            # Si es Docs/Sheets/Slides → exportar
+            if kind in ("document", "spreadsheets", "presentation"):
+                u, ext = docs_export_url(kind, fid)
+                local = os.path.join(td, f"{fid}{ext}")
+                download_file(u, local)
+            else:
+                # Archivos subidos a Drive
+                u = f"https://drive.google.com/uc?export=download&id={fid}"
+                local = os.path.join(td, fid)
+                download_file(u, local)
 
         # Nombre del archivo de salida
         if not out_path:
@@ -206,16 +271,52 @@ def process_url(url, out_path=None, verbose=True):
         logging.info(f"Listo → {out_path}")
         return out_path
 
+def process_local_file(file_path, out_path=None, verbose=True):
+    """
+    Procesa un archivo local directamente sin descarga.
+    Útil para archivos ya descargados de Firebase.
+    """
+    setup_logging(verbose)
+    
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Archivo no encontrado: {file_path}")
+    
+    logging.info(f"Procesando archivo local: {file_path}")
+    
+    # Nombre del archivo de salida
+    if not out_path:
+        out_path = os.path.splitext(file_path)[0] + "_procesado.txt"
+    
+    logging.info("Extrayendo texto…")
+    text = choose_extractor(file_path)
+    
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(text)
+    
+    logging.info(f"Listo → {out_path}")
+    return out_path, text
+
 # ---------- CLI ----------
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description="ETL Google Drive a TXT")
-    ap.add_argument("--url", required=True, help="URL pública de Google Drive")
+    ap = argparse.ArgumentParser(description="ETL - Extractor de Texto de Documentos")
+    
+    # Grupo de argumentos mutuamente excluyentes
+    input_group = ap.add_mutually_exclusive_group(required=True)
+    input_group.add_argument("--url", help="URL pública de Google Drive")
+    input_group.add_argument("--firebase-url", help="URL de Firebase Storage (gs://...)")
+    input_group.add_argument("--local-file", help="Ruta a archivo local")
+    
     ap.add_argument("--out", help="Ruta de salida .txt")
     ap.add_argument("--quiet", action="store_true", help="Menos logs")
     args = ap.parse_args()
 
     try:
-        process_url(args.url, args.out, not args.quiet)
+        if args.local_file:
+            process_local_file(args.local_file, args.out, not args.quiet)
+        else:
+            # Para URLs de Google Drive o Firebase
+            url = args.url or args.firebase_url
+            process_url(url, args.out, not args.quiet)
     except Exception as e:
         logging.exception(f"Error: {e}")
         sys.exit(1)

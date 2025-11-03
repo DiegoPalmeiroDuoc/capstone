@@ -6,41 +6,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login / Registro - Intexta</title>
+    <meta name="description" content="Inicia sesión o regístrate en Intexta">
     <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body>
+<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
 
-    <!-- Mensajes -->
-    <div id="messageBox" class="message-box" style="display:none;">
-        <span id="messageText"></span>
-        <div id="messageAction" style="margin-top:8px;"></div>
+    <!-- Header simple -->
+    <div style="position: fixed; top: 0; left: 0; right: 0; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 100;">
+        <div style="display: flex; align-items: center; gap: 1rem; color: white;">
+            <i class="fas fa-robot" style="font-size: 2rem;"></i>
+            <div style="font-size: 1.5rem; font-weight: 700;">Intexta</div>
+        </div>
+        <button onclick="location.href='/'" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid white;">
+            <i class="fas fa-home"></i> Volver al inicio
+        </button>
     </div>
 
-    <section class="login-section">
-        <h2 id="formTitle"><i class="fas fa-user"></i> Iniciar sesión</h2>
+    <!-- Mensajes (toast) -->
+    <div id="toastContainer" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;"></div>
+
+    <section class="login-section" style="margin-top: 3rem; animation: fadeIn 0.5s ease-in;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <i class="fas fa-user-circle" style="font-size: 4rem; color: var(--primary-color);"></i>
+        </div>
+        
+        <h2 id="formTitle"><i class="fas fa-sign-in-alt"></i> Iniciar sesión</h2>
+        
         <div class="login-form">
-            <input id="email" type="email" placeholder="Correo electrónico">
-            <div class="password-container">
-                <input id="password" type="password" placeholder="Contraseña">
-                <i class="fas fa-eye" onclick="togglePassword('password')"></i>
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i> Correo electrónico
+                </label>
+                <input id="email" type="email" placeholder="tu@email.com" required>
             </div>
-
-            <!-- Registro -->
-            <div id="extraFields" style="display:none;">
-                <input id="emailConfirm" type="email" placeholder="Confirmar correo electrónico">
+            
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Contraseña
+                </label>
                 <div class="password-container">
-                    <input id="passwordConfirm" type="password" placeholder="Confirmar contraseña">
-                    <i class="fas fa-eye" onclick="togglePassword('passwordConfirm')"></i>
+                    <input id="password" type="password" placeholder="••••••••" required>
+                    <i class="fas fa-eye" onclick="togglePassword('password')"></i>
                 </div>
-                <input id="nombre" type="text" placeholder="Nombre completo">
             </div>
 
-            <!-- El botón ahora tiene onclick directo -->
-            <button id="actionBtn" onclick="login()">Ingresar</button>
-            <p id="toggleText">
-                ¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate aquí</a>
+            <!-- Campos adicionales para registro -->
+            <div id="extraFields" style="display:none;">
+                <div class="form-group">
+                    <label for="emailConfirm">
+                        <i class="fas fa-envelope-open"></i> Confirmar correo
+                    </label>
+                    <input id="emailConfirm" type="email" placeholder="Confirma tu correo">
+                </div>
+                
+                <div class="form-group">
+                    <label for="passwordConfirm">
+                        <i class="fas fa-lock"></i> Confirmar contraseña
+                    </label>
+                    <div class="password-container">
+                        <input id="passwordConfirm" type="password" placeholder="Confirma tu contraseña">
+                        <i class="fas fa-eye" onclick="togglePassword('passwordConfirm')"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nombre">
+                        <i class="fas fa-user"></i> Nombre completo
+                    </label>
+                    <input id="nombre" type="text" placeholder="Tu nombre completo">
+                </div>
+            </div>
+
+            <button id="actionBtn" onclick="login()" class="success" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-sign-in-alt"></i> Ingresar
+            </button>
+            
+            <p id="toggleText" style="text-align: center; margin-top: 1.5rem; color: var(--text-light);">
+                ¿No tienes cuenta? <a href="#" onclick="showRegister()" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Regístrate aquí</a>
+            </p>
+        </div>
+
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); text-align: center;">
+            <p style="color: var(--text-light); font-size: 0.875rem; line-height: 1.6;">
+                <i class="fas fa-info-circle"></i> Al registrarte, recibirás un correo de verificación. 
+                Revisa tu bandeja de entrada y spam.
             </p>
         </div>
     </section>
@@ -64,76 +115,190 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        function showMessage(type, text, actionHtml = "") {
-            const box = document.getElementById('messageBox');
-            document.getElementById('messageText').textContent = text;
-            document.getElementById('messageAction').innerHTML = actionHtml;
-            box.className = `message-box message-${type}`;
-            box.style.display = 'block';
-            setTimeout(() => box.classList.add('show'), 10);
-            if (!actionHtml) {
-                setTimeout(() => {
-                    box.classList.remove('show');
-                    setTimeout(() => { box.style.display = 'none'; }, 300);
-                }, 5000);
+        // DEBUG: Sistema de logs persistentes
+        const addLog = (msg) => {
+            const logs = JSON.parse(localStorage.getItem('authLogs') || '[]');
+            logs.push(`[${new Date().toLocaleTimeString()}] LOGIN: ${msg}`);
+            if (logs.length > 20) logs.shift();
+            localStorage.setItem('authLogs', JSON.stringify(logs));
+            console.log(msg);
+        };
+
+        // Verificar si ya hay sesión activa y redirigir automáticamente
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+        
+        addLog("🔍 Página cargada, verificando estado de autenticación...");
+        
+        let hasCheckedAuth = false;
+        
+        onAuthStateChanged(auth, (user) => {
+            if (hasCheckedAuth) {
+                addLog("⚠️ onAuthStateChanged llamado múltiples veces, ignorando");
+                return;
             }
+            hasCheckedAuth = true;
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromLogout = urlParams.get('logout');
+            
+            addLog(`Estado recibido: ${user ? user.email : 'null'}, fromLogout: ${fromLogout}`);
+            
+            if (user && user.emailVerified && !fromLogout) {
+                addLog(`✅ Usuario ya autenticado: ${user.email} - Redirigiendo a dashboard`);
+                window.location.href = "/dashboard";
+            } else if (fromLogout) {
+                addLog("🚪 Viene desde logout, mostrando formulario de login");
+            } else {
+                addLog("ℹ️ No hay usuario autenticado, mostrando formulario");
+            }
+        });
+
+        // Toast notifications mejoradas
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = {
+                'success': 'fa-check-circle',
+                'error': 'fa-times-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            }[type] || 'fa-info-circle';
+            
+            toast.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, type === 'info' ? 6000 : 4000);
         }
 
         function togglePassword(idCampo) {
             const campo = document.getElementById(idCampo);
-            campo.type = campo.type === "password" ? "text" : "password";
+            const icon = campo.parentElement.querySelector('i');
+            if (campo.type === "password") {
+                campo.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                campo.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         }
 
         function login() {
-            const emailVal = document.getElementById('email').value;
+            const emailVal = document.getElementById('email').value.trim();
             const passVal = document.getElementById('password').value;
+
+            console.log("🔐 Intentando login con:", emailVal);
+
+            if (!emailVal || !passVal) {
+                showToast("Por favor completa todos los campos", "warning");
+                return;
+            }
+
+            // Validar formato de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailVal)) {
+                showToast("Por favor ingresa un correo válido", "warning");
+                return;
+            }
+
+            // Deshabilitar botón mientras procesa
+            const btn = document.getElementById('actionBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión...';
 
             signInWithEmailAndPassword(auth, emailVal, passVal)
                 .then(userCredential => {
+                    console.log("✅ Login exitoso:", userCredential.user.email);
                     const user = userCredential.user;
 
-                    // Recargar el estado del usuario para obtener emailVerified actualizado
                     return user.reload().then(() => {
+                        console.log("Email verificado:", user.emailVerified);
                         if (!user.emailVerified) {
-                            showMessage("error", "Tu cuenta no está verificada. Por favor revisa tu correo.");
+                            showToast("Tu cuenta no está verificada. Por favor revisa tu correo.", "error");
                             signOut(auth);
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
                             return;
                         }
-                        showMessage("success", "Inicio de sesión exitoso");
-                        window.location.href = "/dashboard";
+                        showToast("¡Bienvenido de vuelta!", "success");
+                        console.log("🎯 Redirigiendo a dashboard...");
+                        setTimeout(() => window.location.href = "/dashboard", 1500);
                     });
                 })
                 .catch(error => {
-                    console.error("Error login:", error);
-                    showMessage("error", "Usuario o contraseña incorrectos");
+                    console.error("❌ Error login:", error);
+                    console.error("Código de error:", error.code);
+                    console.error("Mensaje:", error.message);
+                    let mensaje = "Usuario o contraseña incorrectos";
+                    if (error.code === 'auth/user-not-found') {
+                        mensaje = "No existe una cuenta con este correo";
+                    } else if (error.code === 'auth/wrong-password') {
+                        mensaje = "Contraseña incorrecta";
+                    } else if (error.code === 'auth/too-many-requests') {
+                        mensaje = "Demasiados intentos fallidos. Intenta más tarde";
+                    }
+                    showToast(mensaje, "error");
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
                 });
         }
 
         function register() {
-            const emailVal = document.getElementById('email').value;
-            const emailConfirmVal = document.getElementById('emailConfirm').value;
+            const emailVal = document.getElementById('email').value.trim();
+            const emailConfirmVal = document.getElementById('emailConfirm').value.trim();
             const passVal = document.getElementById('password').value;
             const passConfirmVal = document.getElementById('passwordConfirm').value;
-            const nombreVal = document.getElementById('nombre').value;
+            const nombreVal = document.getElementById('nombre').value.trim();
 
+            // Validaciones
             if (!emailVal || !emailConfirmVal || !passVal || !passConfirmVal || !nombreVal) {
-                showMessage("error", "Completa todos los campos");
+                showToast("Por favor completa todos los campos", "warning");
                 return;
             }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailVal)) {
+                showToast("Por favor ingresa un correo válido", "warning");
+                return;
+            }
+
             if (emailVal !== emailConfirmVal) {
-                showMessage("error", "Los correos electrónicos no coinciden");
+                showToast("Los correos electrónicos no coinciden", "error");
                 return;
             }
+
+            if (passVal.length < 6) {
+                showToast("La contraseña debe tener al menos 6 caracteres", "warning");
+                return;
+            }
+
             if (passVal !== passConfirmVal) {
-                showMessage("error", "Las contraseñas no coinciden");
+                showToast("Las contraseñas no coinciden", "error");
                 return;
             }
+
+            // Deshabilitar botón mientras procesa
+            const btn = document.getElementById('actionBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
 
             createUserWithEmailAndPassword(auth, emailVal, passVal)
                 .then(userCredential => {
                     sendEmailVerification(userCredential.user)
                         .then(() => {
-                            showMessage("info", `Se ha enviado un correo de verificación a ${emailVal}. Por favor verifica tu cuenta antes de iniciar sesión. Revisa tu bandeja de entrada y carpetas de spam`);
+                            showToast(`✅ Cuenta creada. Se ha enviado un correo de verificación a ${emailVal}. Por favor verifica tu cuenta antes de iniciar sesión. Revisa tu bandeja de entrada y carpetas de spam.`, "info");
                         });
                     return setDoc(doc(db, "usuarios", userCredential.user.uid), {
                         nombre: nombreVal,
@@ -144,33 +309,61 @@
                     });
                 })
                 .then(() => {
-                    setTimeout(() => showLogin(), 5000);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    setTimeout(() => showLogin(), 6000);
                 })
-                .catch(error => showMessage("error", error.message));
+                .catch(error => {
+                    console.error("Error registro:", error);
+                    let mensaje = "Error al crear la cuenta";
+                    if (error.code === 'auth/email-already-in-use') {
+                        mensaje = "Ya existe una cuenta con este correo";
+                    } else if (error.code === 'auth/weak-password') {
+                        mensaje = "La contraseña es muy débil";
+                    }
+                    showToast(mensaje, "error");
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
         }
 
         function showRegister() {
-            document.getElementById("formTitle").innerHTML = '<i class="fas fa-user-plus"></i> Registrarse';
+            document.getElementById("formTitle").innerHTML = '<i class="fas fa-user-plus"></i> Crear cuenta';
             document.getElementById("extraFields").style.display = "block";
-            document.getElementById("actionBtn").innerText = "Crear cuenta";
-            document.getElementById("actionBtn").onclick = register;
-            document.getElementById("toggleText").innerHTML = '¿Ya tienes cuenta? <a href="#" onclick="showLogin()">Inicia sesión aquí</a>';
+            const btn = document.getElementById("actionBtn");
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> Crear cuenta';
+            btn.onclick = register;
+            document.getElementById("toggleText").innerHTML = '¿Ya tienes cuenta? <a href="#" onclick="showLogin()" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Inicia sesión aquí</a>';
         }
 
         function showLogin() {
-            document.getElementById("formTitle").innerHTML = '<i class="fas fa-user"></i> Iniciar sesión';
+            document.getElementById("formTitle").innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar sesión';
             document.getElementById("extraFields").style.display = "none";
-            document.getElementById("actionBtn").innerText = "Ingresar";
-            document.getElementById("actionBtn").onclick = login;
-            document.getElementById("toggleText").innerHTML = '¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate aquí</a>';
+            const btn = document.getElementById("actionBtn");
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ingresar';
+            btn.onclick = login;
+            document.getElementById("toggleText").innerHTML = '¿No tienes cuenta? <a href="#" onclick="showRegister()" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Regístrate aquí</a>';
         }
 
-        // Exponer funciones para que puedan ser llamadas desde HTML
+        // Exponer funciones globalmente
         window.togglePassword = togglePassword;
         window.showRegister = showRegister;
         window.showLogin = showLogin;
         window.login = login;
         window.register = register;
+
+        // Enter key para enviar formulario
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const btn = document.getElementById('actionBtn');
+                        if (btn.onclick) btn.onclick();
+                    }
+                });
+            });
+        });
     </script>
 
 </body>

@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "admin-doc-ia"
-  }
+    "intexta": "admin-doc-ia"
+  },
+  "targets": {},
+  "etags": {}
 }

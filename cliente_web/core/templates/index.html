@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intexta - Tu asistente virtual</title>
+    <title>Intexta - Tu asistente virtual inteligente</title>
+    <meta name="description" content="Plataforma inteligente que conecta con WhatsApp y responde automáticamente usando tus documentos">
     <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
@@ -17,9 +18,7 @@
             <img src="{% static 'img/logo.png' %}" alt="Logo Intexta" class="logo-img">
             <div>
                 <div class="logo-text">Intexta</div>
-                <div class="subtitle">Tu asistente virtual</div>
-                <button id="loginBtn"></button>
-
+                <div class="subtitle">Asistente virtual inteligente</div>
             </div>
         </div>
 
@@ -30,6 +29,12 @@
 
         <!-- Menú de navegación -->
         <nav id="nav-menu">
+            <button onclick="scrollToSection('info')">
+                <i class="fas fa-info-circle"></i> ¿Qué es?
+            </button>
+            <button onclick="scrollToSection('features')">
+                <i class="fas fa-star"></i> Características
+            </button>
             <button onclick="scrollToSection('contacto')">
                 <i class="fas fa-envelope"></i> Contacto
             </button>
@@ -41,51 +46,210 @@
 
     <!-- HERO -->
     <section class="hero" data-aos="fade-up">
-        <h1><i class="fas fa-lightbulb"></i> Un sistema que sabe todo sobre tu negocio y lo pone a tu alcance</h1>
-        <button onclick="scrollToSection('info')" data-aos="flip-up">
-            <i class="fas fa-arrow-down"></i> Descubrir
+        <h1>
+            <i class="fas fa-robot"></i><br>
+            Respuestas inteligentes desde tus documentos
+        </h1>
+        <p>
+            Conecta tus documentos con WhatsApp y ofrece respuestas automáticas 
+            precisas a tus clientes, 24/7
+        </p>
+        <button onclick="location.href='/login'" data-aos="flip-up">
+            <i class="fas fa-rocket"></i> Comenzar ahora
         </button>
     </section>
 
     <!-- INFO -->
     <section class="info" id="info" data-aos="fade-right">
-        <h2><i class="fas fa-info-circle"></i> ¿Qué es Intexta?</h2>
-        <p>
-            Intexta es una plataforma inteligente que conecta con tus canales de comunicación,
-            como WhatsApp, y responde automáticamente a las consultas sobre tus productos y servicios,
-            utilizando tus propios documentos y datos.
+        <h2><i class="fas fa-lightbulb"></i> ¿Qué es Intexta?</h2>
+        <p style="font-size: 1.125rem; max-width: 800px; margin: 0 auto; line-height: 1.8;">
+            <strong>Intexta</strong> es una plataforma de asistente virtual que procesa tus documentos 
+            (PDF, Word, Excel, PowerPoint) y los conecta con WhatsApp mediante inteligencia artificial. 
+            Tus clientes pueden hacer preguntas y recibir respuestas precisas basadas en tu información.
         </p>
-        <img src="https://via.placeholder.com/300x200" alt="Imagen del proyecto" data-aos="zoom-in">
+        <div style="margin-top: 2rem; display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+            <div style="text-align: center;" data-aos="zoom-in" data-aos-delay="100">
+                <i class="fas fa-upload" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <h3 style="margin-top: 1rem;">1. Sube tus documentos</h3>
+                <p style="color: var(--text-light);">Carga archivos PDF, Word, Excel o PowerPoint</p>
+            </div>
+            <div style="text-align: center;" data-aos="zoom-in" data-aos-delay="200">
+                <i class="fas fa-cogs" style="font-size: 3rem; color: var(--secondary-color);"></i>
+                <h3 style="margin-top: 1rem;">2. Procesamiento automático</h3>
+                <p style="color: var(--text-light);">El sistema extrae y procesa la información</p>
+            </div>
+            <div style="text-align: center;" data-aos="zoom-in" data-aos-delay="300">
+                <i class="fab fa-whatsapp" style="font-size: 3rem; color: #25D366;"></i>
+                <h3 style="margin-top: 1rem;">3. Respuestas en WhatsApp</h3>
+                <p style="color: var(--text-light);">Tu chatbot responde automáticamente</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CARACTERÍSTICAS -->
+    <section class="features" id="features">
+        <h2 data-aos="fade-up"><i class="fas fa-star"></i> Características principales</h2>
+        <div class="features-grid">
+            <div class="feature-card" data-aos="flip-left" data-aos-delay="100">
+                <i class="fas fa-file-alt"></i>
+                <h3>Múltiples formatos</h3>
+                <p>
+                    Procesa documentos en PDF, Word (.docx), Excel (.xlsx) y PowerPoint (.pptx). 
+                    El sistema extrae texto automáticamente de cualquier formato.
+                </p>
+            </div>
+
+            <div class="feature-card" data-aos="flip-left" data-aos-delay="200">
+                <i class="fas fa-brain"></i>
+                <h3>Inteligencia Artificial</h3>
+                <p>
+                    Utiliza modelos de IA avanzados (DeepSeek) para comprender preguntas 
+                    y generar respuestas coherentes basadas en tus documentos.
+                </p>
+            </div>
+
+            <div class="feature-card" data-aos="flip-left" data-aos-delay="300">
+                <i class="fab fa-whatsapp"></i>
+                <h3>Integración WhatsApp</h3>
+                <p>
+                    Conecta directamente con WhatsApp usando Twilio. Tus clientes 
+                    reciben respuestas instantáneas sin salir de la aplicación.
+                </p>
+            </div>
+
+            <div class="feature-card" data-aos="flip-left" data-aos-delay="400">
+                <i class="fas fa-lock"></i>
+                <h3>Seguridad total</h3>
+                <p>
+                    Tus documentos están protegidos en Firebase Storage con autenticación 
+                    avanzada. Solo tú tienes acceso a tu información.
+                </p>
+            </div>
+
+            <div class="feature-card" data-aos="flip-left" data-aos-delay="500">
+                <i class="fas fa-chart-line"></i>
+                <h3>Panel de control</h3>
+                <p>
+                    Dashboard intuitivo para gestionar documentos, ver estadísticas 
+                    y monitorear el estado de procesamiento en tiempo real.
+                </p>
+            </div>
+
+            <div class="feature-card" data-aos="flip-left" data-aos-delay="600">
+                <i class="fas fa-clock"></i>
+                <h3>Disponibilidad 24/7</h3>
+                <p>
+                    Tu asistente virtual funciona las 24 horas del día, los 7 días 
+                    de la semana, sin interrupciones ni tiempos de espera.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CASOS DE USO -->
+    <section class="info" data-aos="fade-up">
+        <h2><i class="fas fa-briefcase"></i> ¿Para quién es Intexta?</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 2rem;">
+            <div style="text-align: center; padding: 1.5rem; background: var(--light-bg-alt); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);" data-aos="zoom-in">
+                <i class="fas fa-store" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                <h3 style="margin-top: 1rem;">E-commerce</h3>
+                <p style="color: var(--text-light);">Responde preguntas sobre productos, precios y disponibilidad</p>
+            </div>
+            <div style="text-align: center; padding: 1.5rem; background: var(--light-bg-alt); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);" data-aos="zoom-in" data-aos-delay="100">
+                <i class="fas fa-graduation-cap" style="font-size: 2.5rem; color: var(--secondary-color);"></i>
+                <h3 style="margin-top: 1rem;">Educación</h3>
+                <p style="color: var(--text-light);">Asistente para materiales de estudio y preguntas frecuentes</p>
+            </div>
+            <div style="text-align: center; padding: 1.5rem; background: var(--light-bg-alt); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);" data-aos="zoom-in" data-aos-delay="200">
+                <i class="fas fa-building" style="font-size: 2.5rem; color: var(--info-color);"></i>
+                <h3 style="margin-top: 1rem;">Empresas</h3>
+                <p style="color: var(--text-light);">Soporte interno con manuales y políticas corporativas</p>
+            </div>
+            <div style="text-align: center; padding: 1.5rem; background: var(--light-bg-alt); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);" data-aos="zoom-in" data-aos-delay="300">
+                <i class="fas fa-heartbeat" style="font-size: 2.5rem; color: var(--success-color);"></i>
+                <h3 style="margin-top: 1rem;">Salud</h3>
+                <p style="color: var(--text-light);">Información sobre servicios, horarios y procedimientos</p>
+            </div>
+        </div>
     </section>
 
     <!-- CONTACTO -->
-    <section class="info" id="contacto" data-aos="fade-left">
+    <section class="contact" id="contacto" data-aos="fade-left">
         <h2><i class="fas fa-envelope-open-text"></i> Contacto</h2>
-        <p>Si quieres más información, escríbenos a <strong>contacto@intexta.com</strong></p>
+        <p style="font-size: 1.125rem; margin-bottom: 2rem;">
+            ¿Tienes preguntas? ¿Quieres una demo personalizada? ¡Contáctanos!
+        </p>
+        <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+            <div style="text-align: center;">
+                <i class="fas fa-envelope" style="font-size: 2rem; color: var(--primary-color);"></i>
+                <p style="margin-top: 0.5rem;"><strong>Email:</strong><br>contacto@intexta.com</p>
+            </div>
+            <div style="text-align: center;">
+                <i class="fab fa-whatsapp" style="font-size: 2rem; color: #25D366;"></i>
+                <p style="margin-top: 0.5rem;"><strong>WhatsApp:</strong><br>+56 9 1234 5678</p>
+            </div>
+            <div style="text-align: center;">
+                <i class="fas fa-clock" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                <p style="margin-top: 0.5rem;"><strong>Horario:</strong><br>Lun-Vie 9:00-18:00</p>
+            </div>
+        </div>
     </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p><i class="fas fa-heart" style="color: #ef4444;"></i> Desarrollado con pasión por el equipo Intexta</p>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem;">© 2024 Intexta. Todos los derechos reservados.</p>
+    </footer>
 
     <script src="{% static 'js/main.js' %}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <script>
-      AOS.init({
-        duration: 1000,
-        once: true
-      });
+        // Inicializar animaciones AOS
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 100
+        });
 
-      firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    auth.onAuthStateChanged(user => {
-        const loginBtn = document.getElementById('loginBtn');
-        if (user) {
-            loginBtn.innerHTML = '<i class="fas fa-tachometer-alt"></i> Ir al Dashboard';
-            loginBtn.onclick = () => window.location.href = "/dashboard";
-        } else {
-            loginBtn.innerHTML = '<i class="fas fa-user"></i> Iniciar sesión';
-            loginBtn.onclick = () => window.location.href = "/login";
-        }
-    });
+        // Smooth scroll
+        window.scrollToSection = function(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            // Cerrar menú móvil si está abierto
+            const nav = document.getElementById('nav-menu');
+            if (nav) {
+                nav.classList.remove('show');
+            }
+        };
 
-      
+        // Toggle menú móvil
+        window.toggleMenu = function() {
+            const nav = document.getElementById('nav-menu');
+            const hamburger = document.querySelector('.hamburger i');
+            if (nav) {
+                nav.classList.toggle('show');
+                // Cambiar icono hamburguesa
+                if (nav.classList.contains('show')) {
+                    hamburger.classList.remove('fa-bars');
+                    hamburger.classList.add('fa-times');
+                } else {
+                    hamburger.classList.remove('fa-times');
+                    hamburger.classList.add('fa-bars');
+                }
+            }
+        };
+
+        // Efecto scroll en header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
     </script>
 </body>
 </html>

@@ -19,91 +19,301 @@
         </div>
     </div>
     <nav>
-        <button onclick="window.location.href='/dashboard'"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+        <a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
         <button onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
     </nav>
 </header>
 
-<section class="profile-section">
-    <h2><i class="fas fa-user-circle"></i> Mi perfil</h2>
-
-    <div class="profile-form">
-        <label>Nombre completo:</label>
-        <input id="nombre" type="text">
-
-        <label>Correo electrónico:</label>
-        <input id="email" type="email" disabled>
-
-        <label>Rol:</label>
-        <input id="rol" type="text" disabled>
-
-        <label>Fecha de registro:</label>
-        <input id="fechaRegistro" type="text" disabled>
-
-        <button onclick="guardarCambios()">Guardar cambios</button>
+<section class="dashboard-section">
+    <h2><i class="fas fa-user-circle"></i> Mi Perfil</h2>
+    
+    <!-- Información del usuario -->
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h3><i class="fas fa-info-circle"></i> Información Personal</h3>
+        
+        <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email</label>
+            <input type="text" id="userEmail" readonly style="background: var(--bg-color); cursor: not-allowed;">
+        </div>
+        
+        <div class="form-group">
+            <label><i class="fas fa-id-card"></i> ID de Usuario</label>
+            <input type="text" id="userId" readonly style="background: var(--bg-color); cursor: not-allowed; font-family: monospace; font-size: 0.9rem;">
+        </div>
+    </div>
+    
+    <!-- WhatsApp Configuration -->
+    <div class="card" style="max-width: 600px; margin: 2rem auto;">
+        <h3><i class="fab fa-whatsapp"></i> Configuración de WhatsApp</h3>
+        <p style="color: var(--text-light); margin-bottom: 1.5rem;">
+            Vincula tu número de WhatsApp para recibir notificaciones y consultar tus documentos desde el chatbot.
+        </p>
+        
+        <div class="form-group">
+            <label for="telefono">
+                <i class="fas fa-phone"></i> Número de WhatsApp
+            </label>
+            <div style="display: flex; gap: 0.5rem;">
+                <select id="countryCode" style="max-width: 100px; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 1rem;">
+                    <option value="+56">🇨🇱 +56</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+54">🇦🇷 +54</option>
+                    <option value="+55">🇧🇷 +55</option>
+                    <option value="+57">🇨🇴 +57</option>
+                    <option value="+52">🇲🇽 +52</option>
+                    <option value="+51">🇵🇪 +51</option>
+                    <option value="+34">🇪🇸 +34</option>
+                </select>
+                <input 
+                    type="tel" 
+                    id="telefono" 
+                    placeholder="912345678"
+                    pattern="[0-9]{9,15}"
+                    style="flex: 1;"
+                >
+            </div>
+            <small style="color: var(--text-light); display: block; margin-top: 0.5rem;">
+                Formato: Solo números, sin espacios ni guiones
+            </small>
+        </div>
+        
+        <button onclick="updatePhone()" class="primary">
+            <i class="fas fa-save"></i> Guardar Número
+        </button>
+        
+        <div id="phoneStatus" style="margin-top: 1rem;"></div>
+    </div>
+    
+    <!-- Instrucciones WhatsApp -->
+    <div class="card" style="max-width: 600px; margin: 2rem auto; background: linear-gradient(135deg, #25D366, #128C7E); color: white;">
+        <h3 style="color: white;"><i class="fas fa-question-circle"></i> ¿Cómo usar el chatbot?</h3>
+        <div>
+            <ol style="padding-left: 1.5rem; line-height: 1.8;">
+                <li>Guarda tu número de WhatsApp arriba</li>
+                <li>Agrega este número a tus contactos: <strong>+1 415 523 8886</strong></li>
+                <li>Envía el mensaje: <code style="background: rgba(0,0,0,0.2); padding: 0.2rem 0.5rem; border-radius: 4px;">join yellow-tiger</code></li>
+                <li>¡Listo! Ahora puedes consultar tus documentos por WhatsApp</li>
+            </ol>
+            
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                <strong>Ejemplos de preguntas:</strong>
+                <ul style="list-style: none; padding-left: 0; margin-top: 0.5rem;">
+                    <li>💬 "Muéstrame mis documentos"</li>
+                    <li>💬 "¿Cuántos archivos tengo?"</li>
+                    <li>💬 "Busca información sobre contratos"</li>
+                    <li>💬 "¿Qué dice mi último documento?"</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </section>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+<!-- Toast Container -->
+<div id="toastContainer"></div>
 
-<script>
-    // Configuración Firebase
+<!-- Firebase SDK -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyBgqUuI5uJDvmXTyzt9NdtR6BquSqk2OqQ",
         authDomain: "admin-doc-ia.firebaseapp.com",
         projectId: "admin-doc-ia",
-        storageBucket: "admin-doc-ia.firebasestorage.app",
+        storageBucket: "admin-doc-ia.appspot.com",
         messagingSenderId: "711945554973",
         appId: "1:711945554973:web:64892a3f8614cdbf088af4"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    // Verificar si está logueado
-    auth.onAuthStateChanged(user => {
-        if (!user) {
-            window.location.href = "/login";
-        } else {
-            cargarPerfil(user.uid);
+    let currentUser = null;
+
+    // Verificar autenticación
+    console.log("🔍 perfil.html - Verificando autenticación...");
+    
+    // DEBUG: Guardar logs en localStorage para ver el flujo
+    const addLog = (msg) => {
+        const logs = JSON.parse(localStorage.getItem('authLogs') || '[]');
+        logs.push(`[${new Date().toLocaleTimeString()}] PERFIL: ${msg}`);
+        if (logs.length > 20) logs.shift();
+        localStorage.setItem('authLogs', JSON.stringify(logs));
+        console.log(msg);
+    };
+    
+    addLog("🔍 Página cargada, verificando autenticación...");
+    
+    // Mostrar indicador de carga
+    document.body.style.opacity = '0.5';
+    
+    let hasInitialized = false;
+    let authCheckTimeout = null;
+    let callCount = 0;
+    
+    // SOLUCIÓN: Dar más tiempo a Firebase para cargar el estado
+    // Si después de 2000ms no hay usuario, entonces sí redirigir
+    const checkAuthWithTimeout = (user) => {
+        callCount++;
+        addLog(`📞 onAuthStateChanged llamada #${callCount}, usuario: ${user ? user.email : 'null'}`);
+        
+        if (hasInitialized) {
+            addLog("⚠️ Ya inicializado, ignorando llamada adicional");
+            return;
         }
-    });
-
-    function logoutUser() {
-        auth.signOut().then(() => {
-            window.location.href = "/";
-        });
-    }
-
-    function cargarPerfil(uid) {
-        db.collection("usuarios").doc(uid).get().then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                document.getElementById('nombre').value = data.nombre || '';
-                document.getElementById('email').value = data.email || '';
-                document.getElementById('rol').value = data.rol || '';
-                document.getElementById('fechaRegistro').value = data.fechaRegistro || '';
-            } else {
-                alert("No se encontraron datos de perfil");
+        
+        if (user) {
+            // Si hay usuario, inicializar inmediatamente
+            hasInitialized = true;
+            if (authCheckTimeout) {
+                clearTimeout(authCheckTimeout);
+                addLog("✅ Usuario encontrado, cancelando timeout");
             }
-        });
+            addLog(`✅ Usuario autenticado: ${user.email}, inicializando perfil...`);
+            initializeProfile(user);
+        } else {
+            // Si no hay usuario, esperar un poco por si está cargando
+            if (!authCheckTimeout) {
+                addLog("⏳ No hay usuario aún, esperando 2000ms por si Firebase está cargando...");
+                authCheckTimeout = setTimeout(() => {
+                    if (!hasInitialized) {
+                        hasInitialized = true;
+                        addLog(`❌ Timeout después de ${callCount} llamadas - No hay usuario, redirigiendo a /login`);
+                        window.location.href = '/login';
+                    }
+                }, 2000); // Aumentado a 2 segundos
+            } else {
+                addLog(`⏳ Esperando... (llamada #${callCount})`);
+            }
+        }
+    };
+    
+    onAuthStateChanged(auth, checkAuthWithTimeout);
+    
+    // Función para inicializar el perfil
+    async function initializeProfile(user) {
+        console.log("📝 Inicializando perfil para:", user.email);
+        document.body.style.opacity = '1';
+        
+        currentUser = user;
+        document.getElementById('userEmail').value = user.email;
+        document.getElementById('userId').value = user.uid;
+        
+        // Cargar número de teléfono guardado
+        await loadUserPhone(user.uid);
     }
 
-    function guardarCambios() {
-        const uid = auth.currentUser.uid;
-        const nuevoNombre = document.getElementById('nombre').value;
+    // Cargar número de teléfono guardado
+    async function loadUserPhone(uid) {
+        try {
+            const userDoc = await getDoc(doc(db, 'usuarios', uid));
+            
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                if (data.telefono) {
+                    // Separar código de país y número
+                    const phone = data.telefono;
+                    const match = phone.match(/^(\+\d{1,3})(\d+)$/);
+                    
+                    if (match) {
+                        document.getElementById('countryCode').value = match[1];
+                        document.getElementById('telefono').value = match[2];
+                    } else {
+                        document.getElementById('telefono').value = phone;
+                    }
+                    
+                    document.getElementById('phoneStatus').innerHTML = `
+                        <div style="padding: 1rem; background: var(--success-color); color: white; border-radius: 8px;">
+                            <i class="fas fa-check-circle"></i> Número verificado: ${data.telefono}
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error("Error cargando teléfono:", error);
+        }
+    }
 
-        db.collection("usuarios").doc(uid).update({
-            nombre: nuevoNombre
-        }).then(() => {
-            alert("Perfil actualizado correctamente");
-        }).catch(error => {
-            alert("Error al actualizar: " + error.message);
-        });
+    // Actualizar número de teléfono
+    window.updatePhone = async function() {
+        const countryCode = document.getElementById('countryCode').value;
+        const telefono = document.getElementById('telefono').value.trim();
+        
+        if (!telefono) {
+            showToast("Por favor ingresa tu número de WhatsApp", "warning");
+            return;
+        }
+        
+        // Validar formato
+        if (!/^\d{9,15}$/.test(telefono)) {
+            showToast("Número inválido. Solo usa dígitos sin espacios", "error");
+            return;
+        }
+        
+        const fullPhone = countryCode + telefono;
+        
+        try {
+            // Guardar en Firestore
+            await setDoc(doc(db, 'usuarios', currentUser.uid), {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                telefono: fullPhone,
+                fechaActualizacion: serverTimestamp()
+            }, { merge: true });
+            
+            showToast("✅ Número de WhatsApp guardado correctamente", "success");
+            
+            document.getElementById('phoneStatus').innerHTML = `
+                <div style="padding: 1rem; background: var(--success-color); color: white; border-radius: 8px;">
+                    <i class="fas fa-check-circle"></i> Número verificado: ${fullPhone}
+                    <br><small>Ahora puedes usar el chatbot de WhatsApp</small>
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error("Error guardando teléfono:", error);
+            showToast("Error al guardar el número: " + error.message, "error");
+        }
+    };
+
+    // Cerrar sesión
+    window.logoutUser = async function() {
+        try {
+            await signOut(auth);
+            window.location.href = '/login?logout=true';
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+        }
+    };
+
+    // Toast notifications
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-exclamation-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+        
+        toast.innerHTML = `
+            <i class="fas ${icons[type]}"></i>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => container.removeChild(toast), 300);
+        }, 3000);
     }
 </script>
 

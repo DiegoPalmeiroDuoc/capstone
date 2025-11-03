@@ -1,12 +1,48 @@
+# ==================== Core Dependencies ====================
+# Django Framework
+Django>=5.2.7
+djangorestframework>=3.14.0
+
+# Firebase
+firebase-admin>=6.2.0
+
+# Flask (para chatbots)
+Flask>=3.0.0
+Werkzeug>=3.0.0
+
+# Twilio (WhatsApp)
+twilio>=8.10.0
+
+# HTTP Requests
 requests>=2.32.3
 urllib3>=2.2.2
+
+# ==================== Document Processing (ETL) ====================
+# PDF Processing
 pdfplumber>=0.11.4
+pdf2image>=1.17.0
+
+# Word Documents
 python-docx>=1.1.2
+
+# Excel
 pandas>=2.2.2
 openpyxl>=3.1.5
+
+# PowerPoint
 python-pptx>=1.0.2
+
+# Text Encoding
 chardet>=5.2.0
-# OCR
+
+# ==================== OCR (Optional) ====================
 pytesseract>=0.3.13
-pdf2image>=1.17.0
 Pillow>=10.4.0
+
+# ==================== Development & Utilities ====================
+python-dotenv>=1.0.0
+gunicorn>=21.2.0  # Para producción
+
+# ==================== Security ====================
+cryptography>=41.0.0
+
