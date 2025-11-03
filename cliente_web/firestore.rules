@@ -9,7 +9,12 @@ service cloud.firestore {
     // Regla para documentos: solo puede leer sus propios documentos
     match /documentos/{docId} {
       allow read: if request.auth != null && resource.data.usuarioId == request.auth.uid;
-      allow write: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
+      
+      // Permitir crear/actualizar solo si el usuarioId coincide
+      allow create, update: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
+      
+      // Permitir eliminar si el documento pertenece al usuario
+      allow delete: if request.auth != null && resource.data.usuarioId == request.auth.uid;
     }
   }
 }
