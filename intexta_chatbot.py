@@ -43,6 +43,7 @@ DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 # Base de datos en memoria para conversaciones
 conversaciones = {}  # {phone_number: [{role, content}, ...]}
 usuarios_autenticados = {}  # {phone_number: user_id}
+usuarios_contexto = {}  # {phone_number: {'last_doc': doc_id, 'waiting_for': command}}
 
 # Inicializar Firebase
 db = None
@@ -336,7 +337,7 @@ class IntextaChatbot:
             "model": "deepseek-chat",
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 1000  # Aumentado para respuestas más completas
+            "max_tokens": 500  # Aumentado para respuestas más completas
         }
         
         try:
@@ -357,17 +358,35 @@ class IntextaChatbot:
             return response_data["choices"][0]["message"]["content"]
             
         except requests.exceptions.Timeout:
-            return "⏱️ La consulta está tardando más de lo esperado. Por favor, intenta de nuevo."
+            return (
+                "⏱️ *Ups, tomó demasiado tiempo...*\n\n"
+                "Tu consulta está tardando más de lo esperado.\n\n"
+                "💡 *Intenta:*\n"
+                "• Hacer una pregunta más específica\n"
+                "• Esperar unos segundos y volver a intentar\n\n"
+                "Estoy aquí cuando estés listo 😊"
+            )
         except requests.exceptions.RequestException as e:
             logging.error(f"Error en API DeepSeek: {e}")
-            return "❌ Lo siento, hubo un problema al procesar tu consulta. Intenta de nuevo más tarde."
+            return (
+                "❌ *Algo salió mal...*\n\n"
+                "Hubo un problema técnico procesando tu consulta.\n\n"
+                "💡 Por favor:\n"
+                "• Intenta nuevamente en unos momentos\n"
+                "• Si persiste, escribe `/ayuda`\n\n"
+                "¡Disculpa las molestias! 🙏"
+            )
         except (KeyError, IndexError) as e:
             logging.error(f"Error parseando respuesta de DeepSeek: {e}")
-            return "❌ Hubo un error al procesar la respuesta. Por favor, intenta de nuevo."
+            return (
+                "🔧 *Error procesando respuesta*\n\n"
+                "Hubo un problema interpretando la respuesta.\n\n"
+                "Por favor, intenta reformular tu pregunta. 💬"
+            )
     
     def process_message(self, phone_number, incoming_msg):
         """
-        Procesa un mensaje entrante de WhatsApp.
+        Procesa un mensaje entrante de WhatsApp con comandos mejorados.
         
         Args:
             phone_number: Número de teléfono del usuario
@@ -380,13 +399,23 @@ class IntextaChatbot:
         if phone_number not in conversaciones:
             conversaciones[phone_number] = []
         
-        # Comandos especiales
-        if incoming_msg.lower() in ['/ayuda', 'ayuda', 'help']:
+        # Normalizar mensaje
+        msg_lower = incoming_msg.lower().strip()
+        
+        # Comandos de ayuda
+        if msg_lower in ['/ayuda', 'ayuda', 'help', 'menu', '/menu', '?']:
             return self.get_help_message()
         
-        if incoming_msg.lower() in ['/reset', 'reset', 'reiniciar']:
+        # Comando de reset
+        if msg_lower in ['/reset', 'reset', 'reiniciar', 'limpiar', 'borrar']:
             conversaciones[phone_number] = []
-            return "🔄 Conversación reiniciada. ¿En qué puedo ayudarte?"
+            if phone_number in usuarios_contexto:
+                del usuarios_contexto[phone_number]
+            return (
+                "🔄 *Conversación reiniciada*\n\n"
+                "Historial borrado y listo para comenzar de nuevo.\n\n"
+                "¿En qué puedo ayudarte? 😊"
+            )
         
         # Verificar si el usuario está autenticado
         if phone_number not in usuarios_autenticados:
@@ -397,32 +426,100 @@ class IntextaChatbot:
             
             usuarios_autenticados[phone_number] = user_id
             logging.info(f"Usuario autenticado: {phone_number} -> {user_id}")
+            
+            # Mensaje de bienvenida en primera conexión
+            return self.get_welcome_message()
         
         # Obtener documentos del usuario
         user_id = usuarios_autenticados[phone_number]
         documentos = self.get_user_documents(user_id)
         
+        # Comando: Ver lista de documentos
+        if msg_lower in ['/documentos', 'documentos', 'mis documentos', 'lista', '/lista']:
+            return self.get_documents_list(documentos)
+        
+        # Comando: Resumen de documento
+        if msg_lower.startswith('/resumen') or msg_lower.startswith('resumen de'):
+            if not documentos:
+                return (
+                    "📄 No tienes documentos para resumir.\n\n"
+                    "Sube documentos en tu dashboard web primero. 📤"
+                )
+            
+            # Si solo tiene un documento, resumirlo directamente
+            if len(documentos) == 1:
+                doc = documentos[0]
+                resumen_prompt = f"Resume brevemente el documento '{doc['nombre']}' en 3-4 puntos clave."
+                # Procesar como pregunta normal
+                incoming_msg = resumen_prompt
+            else:
+                return (
+                    "📚 Tienes varios documentos.\n\n"
+                    "Por favor especifica cuál quieres resumir:\n"
+                    f"Ejemplo: 'Resumen de {documentos[0]['nombre'][:30]}...'\n\n"
+                    "O usa `/documentos` para ver la lista completa."
+                )
+        
+        # Comando: Buscar por tema
+        if msg_lower.startswith('/buscar '):
+            tema = incoming_msg[8:].strip()  # Quitar '/buscar '
+            if not tema:
+                return (
+                    "🔍 *Búsqueda por tema*\n\n"
+                    "Uso: `/buscar [tema]`\n\n"
+                    "Ejemplos:\n"
+                    "• /buscar matrimonio\n"
+                    "• /buscar contratos\n"
+                    "• /buscar familia\n\n"
+                    "¿Qué tema quieres buscar?"
+                )
+            
+            incoming_msg = f"Busca información sobre: {tema}"
+        
+        # Si no tiene documentos, informar amigablemente
         if not documentos:
             return (
-                "📄 No tienes documentos procesados disponibles.\n\n"
-                "Por favor, sube tus documentos desde la web de Intexta:\n"
-                "https://tu-dominio.com/dashboard"
+                "📄 *Aún no tienes documentos*\n\n"
+                "Para comenzar a usar Intexta:\n\n"
+                "1️⃣ Ve a tu dashboard web\n"
+                "2️⃣ Sube documentos (PDF, Word, Excel...)\n"
+                "3️⃣ Espera el procesamiento\n"
+                "4️⃣ ¡Vuelve aquí para consultarlos!\n\n"
+                "✨ Estaré esperando tus documentos."
             )
         
         # Construir contexto con búsqueda inteligente basada en la pregunta
         context = self.build_context_from_documents(documentos, user_query=incoming_msg)
         
-        # Construir mensajes para la IA
+        # Construir mensajes para la IA con prompt optimizado
         system_prompt = {
             "role": "system",
             "content": (
-                "Eres *Intexta*, asistente experto en análisis de documentos. "
-                "Responde solo con información presente en los textos del usuario. "
-                "\n\nINSTRUCCIONES:"
-                "\n- Da respuestas breves, máximo 4 líneas (~150 caracteres)."
-                "\n- Prioriza precisión y claridad; evita repeticiones o frases introductorias."
-                "\n- Si la respuesta no está en los documentos, di: 'No encuentro esa información en tus documentos.'"
-                "\n- Usa lenguaje natural y directo, con formato claro y, si corresponde, emojis simples (• ✓ →)."
+                "Eres *Intexta* 🤖, un asistente virtual experto y amigable.\n\n"
+                
+                "📋 TU MISIÓN:\n"
+                "Responder preguntas basándote ÚNICAMENTE en los documentos del usuario.\n\n"
+                
+                "✅ RESPUESTAS IDEALES:\n"
+                "• DIRECTO AL GRANO: Sin introducciones innecesarias\n"
+                "• ESPECÍFICO: Cita información exacta del documento\n"
+                "• ESTRUCTURADO: Usa viñetas (•) o números cuando sea apropiado\n"
+                "• CONCISO: 3-5 líneas máximo por WhatsApp\n"
+                "• AMIGABLE: Tono conversacional y emojis relevantes ✨\n\n"
+                
+                "❌ EVITA:\n"
+                "• Frases como 'Según el documento...', 'Basándome en...'\n"
+                "• Repetir la pregunta del usuario\n"
+                "• Información que NO esté en los documentos\n"
+                "• Respuestas ambiguas o vagas\n\n"
+                
+                "🎯 SI NO ENCUENTRAS LA INFO:\n"
+                "Di claramente: '❌ No encuentro esa información en tus documentos'\n\n"
+                
+                "💡 FORMATO PREFERIDO:\n"
+                "→ Respuesta directa primero\n"
+                "→ Detalles o ejemplos después\n"
+                "→ Usa emojis relevantes (📌 ✓ → • 📊 💡)"
             )
         }
                 
@@ -443,6 +540,19 @@ class IntextaChatbot:
         # Llamar a la IA
         response = self.call_deepseek_api(messages)
         
+        # Mejorar respuesta si es muy corta o vaga
+        if response and len(response.strip()) < 20:
+            response += "\n\n💡 ¿Necesitas más detalles? ¡Pregúntame!"
+        
+        # Agregar sugerencia de comandos si la respuesta indica no encontrar información
+        if "no encuentro" in response.lower() or "no tengo" in response.lower():
+            response += (
+                "\n\n💡 *Sugerencias:*\n"
+                "• Usa `/documentos` para ver qué documentos tienes\n"
+                "• Reformula tu pregunta con otras palabras\n"
+                "• Verifica que la info esté en tus documentos"
+            )
+        
         # Guardar respuesta en historial
         conversaciones[phone_number].append({
             "role": "assistant",
@@ -452,25 +562,98 @@ class IntextaChatbot:
         return response
     
     def get_help_message(self):
-        """Mensaje de ayuda"""
+        """Mensaje de ayuda mejorado con formato amigable"""
         return (
-            "🤖 *Intexta - Asistente Virtual*\n\n"
-            "Puedo ayudarte a consultar información de tus documentos.\n\n"
-            "*Comandos:*\n"
-            "• /ayuda - Ver este mensaje\n"
-            "• /reset - Reiniciar conversación\n\n"
-            "Simplemente escribe tu pregunta y te responderé basándome en tus documentos."
+            "🤖 *¡Hola! Soy Intexta* 👋\n\n"
+            "Tu asistente personal para consultar documentos.\n\n"
+            "📋 *Comandos disponibles:*\n"
+            "• `/documentos` - Ver mis documentos\n"
+            "• `/resumen` - Resumen de un documento\n"
+            "• `/buscar [tema]` - Buscar por tema\n"
+            "• `/ayuda` - Ver este menú\n"
+            "• `/reset` - Nueva conversación\n\n"
+            "💬 *O simplemente pregúntame:*\n"
+            "→ '¿Qué dice sobre el matrimonio?'\n"
+            "→ '¿Cuántos documentos tengo?'\n"
+            "→ '¿Qué temas cubre mi PDF?'\n\n"
+            "✨ ¡Estoy listo para ayudarte!"
         )
     
-    def get_authentication_message(self):
-        """Mensaje cuando el usuario no está autenticado"""
+    def get_welcome_message(self, nombre_usuario=""):
+        """Mensaje de bienvenida personalizado"""
+        saludo = f"¡Hola{', ' + nombre_usuario if nombre_usuario else ''}! 👋\n\n" if nombre_usuario else "👋 ¡Bienvenido de nuevo!\n\n"
         return (
-            "👋 ¡Hola! Bienvenido a Intexta.\n\n"
-            "Para usar este servicio, necesitas:\n\n"
-            "1️⃣ Registrarte en https://tu-dominio.com\n"
-            "2️⃣ Vincular tu número de WhatsApp en tu perfil\n"
-            "3️⃣ Subir tus documentos\n\n"
-            "Una vez completado, podrás consultar tus documentos por WhatsApp. 📱"
+            f"{saludo}"
+            "🤖 Soy *Intexta*, tu asistente de documentos.\n\n"
+            "📚 Puedo ayudarte a:\n"
+            "✓ Consultar información de tus documentos\n"
+            "✓ Hacer búsquedas específicas\n"
+            "✓ Obtener resúmenes\n\n"
+            "💡 *Tip:* Escribe `/ayuda` para ver todos los comandos disponibles.\n\n"
+            "¿En qué puedo ayudarte hoy? 😊"
+        )
+    
+    def get_documents_list(self, documentos):
+        """Lista formateada de documentos del usuario"""
+        if not documentos:
+            return (
+                "📄 *Tus documentos*\n\n"
+                "No tienes documentos procesados aún.\n\n"
+                "💡 Para subir documentos:\n"
+                "1. Ve a tu dashboard web\n"
+                "2. Haz clic en 'Subir archivo'\n"
+                "3. ¡Espera el procesamiento!\n\n"
+                "✨ Luego podrás consultarlos aquí por WhatsApp."
+            )
+        
+        msg = "📚 *Tus documentos procesados:*\n\n"
+        for i, doc in enumerate(documentos[:10], 1):  # Máximo 10
+            nombre = doc['nombre']
+            tamaño = len(doc['contenido'])
+            
+            # Emoji según tipo de archivo
+            emoji = "📄"
+            if '.pdf' in nombre.lower():
+                emoji = "📕"
+            elif '.docx' in nombre.lower() or '.doc' in nombre.lower():
+                emoji = "📘"
+            elif '.xlsx' in nombre.lower() or '.xls' in nombre.lower():
+                emoji = "📊"
+            elif '.pptx' in nombre.lower() or '.ppt' in nombre.lower():
+                emoji = "📙"
+            
+            # Tamaño en formato legible
+            if tamaño > 1000000:
+                tamaño_str = f"{tamaño // 1000000}MB"
+            elif tamaño > 1000:
+                tamaño_str = f"{tamaño // 1000}KB"
+            else:
+                tamaño_str = f"{tamaño}B"
+            
+            msg += f"{i}. {emoji} *{nombre[:40]}{'...' if len(nombre) > 40 else ''}*\n"
+            msg += f"   └ {tamaño_str} • {len(doc['contenido'].split())} palabras\n\n"
+        
+        if len(documentos) > 10:
+            msg += f"\n_...y {len(documentos) - 10} documentos más_\n\n"
+        
+        msg += "💬 *Pregúntame sobre cualquiera de ellos*"
+        
+        return msg
+    
+    def get_authentication_message(self):
+        """Mensaje cuando el usuario no está autenticado - más amigable"""
+        return (
+            "👋 *¡Hola! Bienvenido a Intexta*\n\n"
+            "Para comenzar a usar este servicio necesitas:\n\n"
+            "1️⃣ *Registrarte* en la plataforma web\n"
+            "   → Crea tu cuenta con email\n\n"
+            "2️⃣ *Vincular WhatsApp*\n"
+            "   → En tu perfil, agrega este número\n\n"
+            "3️⃣ *Subir documentos*\n"
+            "   → PDF, Word, Excel, PowerPoint...\n\n"
+            "✨ Una vez completado, ¡podré ayudarte aquí en WhatsApp!\n\n"
+            "� ¿Necesitas ayuda? Contáctanos:\n"
+            "→ gi.espinosa@duocuc.cl"
         )
 
 
