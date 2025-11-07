@@ -599,9 +599,9 @@ firebase deploy --only firestore:rules,storage
 ## 📝 Changelog
 
 ### v2.0.0 (2025-11-07) - Limpieza y Optimización
-- 🗑️ Eliminados 47 archivos obsoletos (12,721 líneas)
+- 🗑️ Eliminación de archivos obsoletos 
 - ✨ UX del chatbot completamente optimizada
-- 🎨 Mejoras visuales en perfil.html (QR WhatsApp centrado)
+- 🎨 Mejoras visuales 
 - 📚 README actualizado con documentación completa
 - 🔧 Fix: Comando `/resumen` error 502 corregido
 
@@ -642,16 +642,25 @@ Todos los derechos reservados © 2025
 
 <div align="center">
 
-### Giovanna Narayana Espinosa
-**Desarrolladora Principal**
+### Giovanna Narayana Espinosa 
+
 
 📧 [gi.espinosa@duocuc.cl](mailto:gi.espinosa@duocuc.cl)
+🔗 [GitHub: @Gionara](https://github.com/Gionara)
+
+---
+### Valentina Guajardo 
+
+
+📧 [val.guajardo@duocuc.cl](mailto:val.guajardo@duocuc.cl)
+🔗 [GitHub: @voishimk ](https://github.com/voishimk)
 
 ---
 
 ### Diego Palmeiro
-**Repositorio y Colaboración**
 
+
+📧 [di.palmeiro@duocuc.cl](mailto:di.palmeiro@duocuc.cl)
 🔗 [GitHub: @DiegoPalmeiroDuoc](https://github.com/DiegoPalmeiroDuoc)
 
 </div>
@@ -671,21 +680,16 @@ Todos los derechos reservados © 2025
 
 ## 🎯 Roadmap Futuro
 
-### v3.0 - En Planificación
+### v3.0 - Ideas
 - [ ] Panel de administración completo
+- [ ] Implementacion de metodos de pago y planes
 - [ ] Estadísticas de uso y analytics
 - [ ] Soporte para más formatos (audio, video)
 - [ ] OCR para imágenes y PDFs escaneados
 - [ ] Exportación de conversaciones
 - [ ] Modo offline con sincronización
+- [ ] Chatbot → Agente IA 
 
-### v3.5 - Ideas
-- [ ] App móvil nativa (React Native)
-- [ ] Integración con Google Drive/Dropbox
-- [ ] Análisis de sentimientos
-- [ ] Resúmenes automáticos periódicos
-- [ ] Chatbot en Telegram/Discord
-- [ ] API pública para desarrolladores
 
 ---
 
