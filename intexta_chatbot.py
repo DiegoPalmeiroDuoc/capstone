@@ -155,13 +155,125 @@ class IntextaChatbot:
             logging.error(f"Error buscando usuario por teléfono {phone_number}: {e}")
             return None
     
-    def build_context_from_documents(self, documentos, max_chars=8000):
+    def search_relevant_content(self, text, query, max_chars=100000):
+        """
+        Busca secciones relevantes del texto basándose en la consulta del usuario.
+        Usa búsqueda por palabras clave para encontrar fragmentos relevantes.
+        
+        Args:
+            text: Texto completo del documento
+            query: Pregunta del usuario
+            max_chars: Máximo de caracteres a retornar
+        
+        Returns:
+            String con las secciones más relevantes
+        """
+        # Palabras clave de la consulta (sin palabras comunes)
+        stop_words = {'el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'ser', 'se', 'no', 'hay', 'por', 'con', 'su', 'para', 'como', 'está', 'lo', 'pero', 'sus', 'le', 'ya', 'o', 'fue', 'este', 'ha', 'sí', 'porque', 'esta', 'son', 'entre', 'cuando', 'muy', 'sin', 'sobre', 'también', 'me', 'hasta', 'donde', 'quien', 'desde', 'todo', 'nos', 'durante', 'todos', 'uno', 'les', 'ni', 'contra', 'otros', 'ese', 'eso', 'ante', 'ellos', 'e', 'esto', 'mí', 'antes', 'algunos', 'qué', 'unos', 'yo', 'del', 'mucho', 'te', 'más', 'cual', 'poco', 'ella', 'estar', 'estas', 'algunas', 'algo', 'nosotros', 'cuántos', 'cuánto', 'cuánta', 'cuántas', 'cuál', 'cuáles', 'dice', 'dices', 'tengo', 'tienes', 'tiene'}
+        
+        query_words = [w.lower() for w in query.split() if len(w) > 2 and w.lower() not in stop_words]
+        
+        logging.info(f"🔍 Búsqueda inteligente - Palabras clave: {query_words}")
+        
+        if not query_words:
+            # Si no hay palabras clave, retornar inicio del documento
+            logging.info(f"⚠️  Sin palabras clave, retornando inicio del documento")
+            return text[:max_chars]
+        
+        # Dividir texto en párrafos (bloques más grandes para mejor contexto)
+        # Intentar dividir por doble salto de línea primero
+        paragraphs = text.split('\n\n')
+        
+        # Si hay muy pocos párrafos, dividir por salto de línea simple
+        if len(paragraphs) < 10:
+            paragraphs = text.split('\n')
+        
+        # Calcular score de relevancia para cada párrafo
+        scored_paragraphs = []
+        for i, para in enumerate(paragraphs):
+            para_stripped = para.strip()
+            if len(para_stripped) < 30:  # Ignorar párrafos muy cortos
+                continue
+            
+            para_lower = para_stripped.lower()
+            score = 0
+            
+            # Contar coincidencias de palabras clave (con mayor peso)
+            for word in query_words:
+                count = para_lower.count(word)
+                if count > 0:
+                    # Bonus por coincidencias múltiples
+                    score += count * 20
+                    
+                    # Bonus extra si la palabra aparece al inicio del párrafo
+                    if para_lower.startswith(word) or para_lower.startswith(' ' + word):
+                        score += 10
+            
+            # Bonus por posición (primeros párrafos pueden tener introducción relevante)
+            if i < 50:  # Primeros 50 párrafos
+                position_bonus = 15
+            elif i < 100:  # Párrafos 51-100
+                position_bonus = 10
+            elif i < 200:  # Párrafos 101-200
+                position_bonus = 5
+            else:
+                position_bonus = 0
+            
+            score += position_bonus
+            
+            # Bonus por longitud (párrafos con contenido sustancial)
+            if 100 < len(para_stripped) < 500:
+                score += 5
+            
+            scored_paragraphs.append((score, i, para_stripped))
+        
+        # Ordenar por score descendente
+        scored_paragraphs.sort(reverse=True, key=lambda x: x[0])
+        
+        logging.info(f"📊 Analizados {len(scored_paragraphs)} párrafos, top score: {scored_paragraphs[0][0] if scored_paragraphs else 0}")
+        
+        # Tomar los párrafos más relevantes hasta alcanzar max_chars
+        selected_parts = []
+        total_chars = 0
+        
+        # Aumentar a top 50 para documentos grandes
+        for score, idx, para in scored_paragraphs[:50]:
+            if score == 0:
+                break
+            
+            if total_chars + len(para) + 2 > max_chars:  # +2 por \n\n
+                # Si queda espacio razonable, agregar truncado
+                remaining = max_chars - total_chars
+                if remaining > 300:
+                    selected_parts.append((idx, para[:remaining] + "..."))
+                break
+            
+            selected_parts.append((idx, para))
+            total_chars += len(para) + 2  # +2 por \n\n
+        
+        # Ordenar por índice original para mantener coherencia
+        selected_parts.sort(key=lambda x: x[0])
+        
+        if not selected_parts:
+            logging.warning(f"⚠️  No se encontraron secciones relevantes, retornando inicio")
+            return text[:max_chars]
+        
+        # Unir párrafos seleccionados
+        result = "\n\n".join([para for _, para in selected_parts])
+        
+        logging.info(f"✅ Contexto relevante: {len(result)} caracteres de {len(text)} totales ({len(selected_parts)} secciones)")
+        
+        return result
+    
+    def build_context_from_documents(self, documentos, user_query="", max_chars=100000):
         """
         Construye contexto para la IA a partir de los documentos del usuario.
+        Con búsqueda inteligente de contenido relevante.
         
         Args:
             documentos: Lista de documentos
-            max_chars: Máximo de caracteres a incluir
+            user_query: Pregunta del usuario (para búsqueda relevante)
+            max_chars: Máximo de caracteres a incluir (DeepSeek límite ~256k chars, usamos 100k para seguridad)
         
         Returns:
             String con el contexto formateado
@@ -173,24 +285,37 @@ class IntextaChatbot:
         total_chars = 0
         
         for doc in documentos:
-            doc_header = f"\n--- {doc['nombre']} ---\n"
+            doc_header = f"\n--- {doc['nombre']} ({len(doc['contenido'])} caracteres) ---\n"
             doc_content = doc['contenido']
             
             # Calcular cuánto espacio queda
             available = max_chars - total_chars - len(doc_header)
             
-            if available <= 0:
+            if available <= 500:  # Mínimo 500 chars por documento
+                context_parts.append(f"\n[...más documentos disponibles pero omitidos por límite de contexto...]")
                 break
             
-            # Truncar contenido si es necesario
-            if len(doc_content) > available:
-                doc_content = doc_content[:available] + "\n[...contenido truncado...]"
+            # Si el documento es muy grande y hay una consulta, buscar contenido relevante
+            if len(doc_content) > available and user_query:
+                doc_content = self.search_relevant_content(doc_content, user_query, available)
+                doc_header = f"\n--- {doc['nombre']} (extracto relevante de {len(doc['contenido'])} caracteres totales) ---\n"
+            elif len(doc_content) > available:
+                # Sin consulta, tomar inicio y fin
+                half = available // 2 - 100
+                doc_content = (
+                    doc_content[:half] + 
+                    f"\n\n[...{len(doc_content) - available} caracteres omitidos...]\n\n" +
+                    doc_content[-half:]
+                )
             
             context_parts.append(doc_header)
             context_parts.append(doc_content)
             total_chars += len(doc_header) + len(doc_content)
         
-        return "".join(context_parts)
+        final_context = "".join(context_parts)
+        logging.info(f"📊 Contexto construido: {total_chars} caracteres, {len(documentos)} documentos")
+        
+        return final_context
     
     def call_deepseek_api(self, messages):
         """
@@ -211,7 +336,7 @@ class IntextaChatbot:
             "model": "deepseek-chat",
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 500
+            "max_tokens": 1000  # Aumentado para respuestas más completas
         }
         
         try:
@@ -284,18 +409,23 @@ class IntextaChatbot:
                 "https://tu-dominio.com/dashboard"
             )
         
-        # Construir contexto
-        context = self.build_context_from_documents(documentos)
+        # Construir contexto con búsqueda inteligente basada en la pregunta
+        context = self.build_context_from_documents(documentos, user_query=incoming_msg)
         
         # Construir mensajes para la IA
         system_prompt = {
             "role": "system",
             "content": (
-                "Eres Intexta, un asistente virtual experto. "
-                "Tu trabajo es responder preguntas basándote ÚNICAMENTE en los documentos del usuario. "
-                "Responde de forma clara, concisa y profesional. "
-                "Si la información no está en los documentos, indica que no tienes esa información. "
-                "Mantén las respuestas en máximo 3-4 frases para WhatsApp."
+                "Eres Intexta, un asistente virtual experto en análisis de documentos. "
+                "Tu trabajo es responder preguntas basándote ÚNICAMENTE en los documentos proporcionados. "
+                "\n\nINSTRUCCIONES:"
+                "\n- Lee cuidadosamente todo el contexto antes de responder"
+                "\n- Si la información está en los documentos, responde directamente"
+                "\n- Si NO está en los documentos, indica claramente 'No encuentro esa información en tus documentos'"
+                "\n- Para documentos grandes, se te proporciona contenido relevante basado en la pregunta"
+                "\n- Responde de forma clara y estructurada"
+                "\n- Usa párrafos cortos para WhatsApp (máximo 5-6 líneas)"
+                "\n- Si es necesario, usa viñetas con emojis (• ✓ →)"
             )
         }
         
