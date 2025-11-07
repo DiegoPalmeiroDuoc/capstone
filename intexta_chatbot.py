@@ -449,10 +449,12 @@ class IntextaChatbot:
             # Si solo tiene un documento, resumirlo directamente
             if len(documentos) == 1:
                 doc = documentos[0]
-                resumen_prompt = f"Resume brevemente el documento '{doc['nombre']}' en 3-4 puntos clave."
+                resumen_prompt = f"Resume brevemente el documento '{doc['nombre']}' en 3-4 puntos clave. maximo 3 lineas "
                 # Procesar como pregunta normal
                 incoming_msg = resumen_prompt
+                # Continuar con el flujo normal (no hacer return aquí)
             else:
+                # Retornar mensaje de ayuda si tiene múltiples documentos
                 return (
                     "📚 Tienes varios documentos.\n\n"
                     "Por favor especifica cuál quieres resumir:\n"
@@ -474,7 +476,7 @@ class IntextaChatbot:
                     "¿Qué tema quieres buscar?"
                 )
             
-            incoming_msg = f"Busca información sobre: {tema}"
+            incoming_msg = f"Busca información sobre: {tema} dame una respuesta concisa en 3-4 lineas"
         
         # Si no tiene documentos, informar amigablemente
         if not documentos:

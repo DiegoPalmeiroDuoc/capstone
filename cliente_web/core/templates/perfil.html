@@ -85,25 +85,68 @@
     </div>
     
     <!-- Instrucciones WhatsApp -->
-    <div class="card" style="max-width: 600px; margin: 2rem auto; background: linear-gradient(135deg, #25D366, #128C7E); color: white;">
-        <h3 style="color: white;"><i class="fas fa-question-circle"></i> ¿Cómo usar el chatbot?</h3>
-        <div>
-            <ol style="padding-left: 1.5rem; line-height: 1.8;">
-                <li>Guarda tu número de WhatsApp arriba</li>
-                <li>Agrega este número a tus contactos: <strong>+1 415 523 8886</strong></li>
-                <li>Envía el mensaje: <code style="background: rgba(0,0,0,0.2); padding: 0.2rem 0.5rem; border-radius: 4px;">join yellow-tiger</code></li>
-                <li>¡Listo! Ahora puedes consultar tus documentos por WhatsApp</li>
-            </ol>
-            
-            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                <strong>Ejemplos de preguntas:</strong>
-                <ul style="list-style: none; padding-left: 0; margin-top: 0.5rem;">
-                    <li>💬 "Muéstrame mis documentos"</li>
-                    <li>💬 "¿Cuántos archivos tengo?"</li>
-                    <li>💬 "Busca información sobre contratos"</li>
-                    <li>💬 "¿Qué dice mi último documento?"</li>
-                </ul>
+    <div class="card" style="max-width: 600px; margin: 2rem auto; background: linear-gradient(135deg, #25D366, #128C7E); color: white; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);">
+        <h3 style="color: white; margin-bottom: 1.5rem;"><i class="fas fa-question-circle"></i> ¿Cómo usar el chatbot?</h3>
+        
+        <!-- Instrucciones paso a paso -->
+        <ol style="padding-left: 1.5rem; line-height: 2; margin-bottom: 2rem; font-size: 1rem;">
+            <li>Guarda tu número de WhatsApp arriba ☝️</li>
+            <li>Agrega este número a tus contactos: <strong>+1 415 523 8886</strong></li>
+            <li>Envía el mensaje: <code style="background: rgba(0,0,0,0.2); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.95rem;">join fence-wolf</code></li>
+            <li>¡Listo! Ahora puedes consultar tus documentos por WhatsApp 🎉</li>
+        </ol>
+
+        <!-- Sección centrada: QR + Botón -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; margin: 2rem 0;">
+            <!-- Código QR -->
+            <div style="background: white; padding: 1rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <img src="{% static 'img/qr-wsp.png' %}" alt="QR WhatsApp" style="width: 200px; height: 200px; display: block;">
             </div>
+            
+            <!-- Botón WhatsApp -->
+            <button 
+                onclick="window.open('https://wa.me/14155238886?text=join%20fence-wolf', '_blank')" 
+                style="
+                    background: #128C7E; 
+                    color: white; 
+                    border: none; 
+                    padding: 1rem 2rem; 
+                    font-size: 1.1rem; 
+                    font-weight: 600; 
+                    border-radius: 50px; 
+                    cursor: pointer; 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 0.75rem;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    min-width: 250px;
+                    justify-content: center;
+                "
+                onmouseover="this.style.background='#0d6d61'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                onmouseout="this.style.background='#128C7E'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'"
+            >
+                <i class="fab fa-whatsapp" style="font-size: 1.5rem;"></i>
+                <span>Abrir WhatsApp</span>
+            </button>
+            
+            <p style="font-size: 0.9rem; opacity: 0.9; margin: 0;">
+                Escanea el QR o haz clic en el botón para comenzar
+            </p>
+        </div>
+
+        <!-- Ejemplos de uso -->
+        <div style="background: rgba(0,0,0,0.2); padding: 1.25rem; border-radius: 12px; margin-top: 1.5rem; border-left: 4px solid rgba(255,255,255,0.5);">
+            <strong style="font-size: 1.05rem; display: block; margin-bottom: 0.75rem;">
+                <i class="fas fa-lightbulb"></i> Ejemplos de preguntas:
+            </strong>
+            <ul style="list-style: none; padding-left: 0; margin: 0; line-height: 2;">
+                <li>💬 "Muéstrame mis documentos"</li>
+                <li>💬 "¿Cuántos archivos tengo?"</li>
+                <li>💬 "Busca información sobre contratos"</li>
+                <li>💬 "¿Qué dice mi último documento?"</li>
+                <li>💬 "/ayuda - Ver todos los comandos"</li>
+            </ul>
         </div>
     </div>
 </section>
@@ -129,6 +172,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
 
     let currentUser = null;
 
